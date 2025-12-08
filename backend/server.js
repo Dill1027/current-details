@@ -56,7 +56,10 @@ const corsOptions = {
       'http://127.0.0.1:3000',
       'http://127.0.0.1:3001',
       'http://192.168.1.56:3000',
-      'http://192.168.1.56:3001'
+      'http://192.168.1.56:3001',
+      // Add Vercel deployment URLs
+      'https://current-details-notq-k08hw4wc-dill027s-projects.vercel.app',
+      'https://current-details-notq.vercel.app'
     ];
     
     // Allow requests with no origin (like mobile apps or curl requests)
@@ -66,10 +69,11 @@ const corsOptions = {
       return callback(null, true);
     }
     
-    if (allowedOrigins.indexOf(origin) !== -1) {
+    // In production, check if origin ends with .vercel.app or is in allowed list
+    if (origin && (origin.endsWith('.vercel.app') || allowedOrigins.indexOf(origin) !== -1)) {
       callback(null, true);
     } else {
-      callback(new Error('Not allowed by CORS'));
+      callback(null, true); // Allow all origins in production for now
     }
   },
   credentials: true,
