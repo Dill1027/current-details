@@ -12,7 +12,8 @@ const sendUploadError = (res, message, statusCode = 400) => {
 };
 
 // Ensure upload directory exists with proper error handling
-const uploadDir = process.env.UPLOAD_PATH || './uploads/';
+// Use /tmp for serverless environments like Vercel
+const uploadDir = process.env.UPLOAD_PATH || (process.env.NODE_ENV === 'production' ? '/tmp/uploads/' : './uploads/');
 
 const createUploadDirectory = () => {
   try {
@@ -26,12 +27,19 @@ const createUploadDirectory = () => {
     console.log(`Upload directory is writable: ${uploadDir}`);
   } catch (error) {
     console.error('Error with upload directory:', error);
-    throw new Error(`Upload directory error: ${error.message}`);
+    // In serverless, don't throw - just log and continue
+    if (process.env.NODE_ENV !== 'production') {
+      throw new Error(`Upload directory error: ${error.message}`);
+    }
   }
 };
 
 // Initialize upload directory
-createUploadDirectory();
+try {
+  createUploadDirectory();
+} catch (error) {
+  console.error('Failed to create upload directory:', error);
+}
 
 // Enhanced storage configuration
 const storage = multer.diskStorage({
