@@ -457,9 +457,11 @@ router.delete('/:id', [
     });
   } catch (error) {
     console.error('Delete item error:', error);
+    console.error('Error stack:', error.stack);
     res.status(500).json({
       success: false,
-      message: 'Server error while deleting item'
+      message: 'Server error while deleting item',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 });
