@@ -133,7 +133,11 @@ router.get('/:id', [
 
     // Add image URL
     const itemObj = item.toObject();
-    itemObj.imageUrl = getFileUrl(req, item.image);
+    if (process.env.NODE_ENV === 'production' && item.image.startsWith('data:')) {
+      itemObj.imageUrl = item.image;
+    } else {
+      itemObj.imageUrl = getFileUrl(req, item.image);
+    }
 
     res.status(200).json({
       success: true,
@@ -202,9 +206,19 @@ router.post('/', [
       });
     }
 
+    // Handle image storage based on environment
+    let imageData;
+    if (process.env.NODE_ENV === 'production' && req.file && req.file.buffer) {
+      // Store as base64 in production (serverless)
+      imageData = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
+    } else {
+      // Store filename in development
+      imageData = req.uploadedFile.filename;
+    }
+
     // Create item
     const item = await Item.create({
-      image: req.uploadedFile.filename,
+      image: imageData,
       dateRange: {
         start: start,
         end: end
@@ -218,7 +232,11 @@ router.post('/', [
 
     // Add image URL
     const itemObj = item.toObject();
-    itemObj.imageUrl = getFileUrl(req, item.image);
+    if (process.env.NODE_ENV === 'production' && item.image.startsWith('data:')) {
+      itemObj.imageUrl = item.image; // Return base64 directly
+    } else {
+      itemObj.imageUrl = getFileUrl(req, item.image);
+    }
 
     res.status(201).json({
       success: true,
@@ -326,10 +344,17 @@ router.put('/:id', [
     }
 
     // Handle image update
-    if (req.uploadedFile) {
-      // Delete old image file
-      deleteUploadedFile(item.image);
-      updateData.image = req.uploadedFile.filename;
+    if (req.uploadedFile || (req.file && req.file.buffer)) {
+      // Handle base64 in production
+      if (process.env.NODE_ENV === 'production' && req.file && req.file.buffer) {
+        updateData.image = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
+      } else if (req.uploadedFile) {
+        // Delete old image file in development
+        if (item.image && !item.image.startsWith('data:')) {
+          deleteUploadedFile(item.image);
+        }
+        updateData.image = req.uploadedFile.filename;
+      }
     }
 
     // Update item
@@ -341,7 +366,11 @@ router.put('/:id', [
 
     // Add image URL
     const itemObj = updatedItem.toObject();
-    itemObj.imageUrl = getFileUrl(req, updatedItem.image);
+    if (process.env.NODE_ENV === 'production' && updatedItem.image.startsWith('data:')) {
+      itemObj.imageUrl = updatedItem.image;
+    } else {
+      itemObj.imageUrl = getFileUrl(req, updatedItem.image);
+    }
 
     res.status(200).json({
       success: true,
@@ -454,10 +483,14 @@ router.get('/my/items', [
     const totalItems = await Item.getItemsCount(filter);
     const totalPages = Math.ceil(totalItems / limit);
 
-    // Add image URLs to items
+    // Add image URLs to all items
     const itemsWithUrls = items.map(item => {
       const itemObj = item.toObject();
-      itemObj.imageUrl = getFileUrl(req, item.image);
+      if (process.env.NODE_ENV === 'production' && item.image.startsWith('data:')) {
+        itemObj.imageUrl = item.image;
+      } else {
+        itemObj.imageUrl = getFileUrl(req, item.image);
+      }
       return itemObj;
     });
 

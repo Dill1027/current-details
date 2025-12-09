@@ -42,39 +42,42 @@ try {
 }
 
 // Enhanced storage configuration
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    try {
-      // Verify directory exists before each upload
-      if (!fs.existsSync(uploadDir)) {
-        createUploadDirectory();
+// Use memory storage for serverless environments (Vercel)
+const storage = process.env.NODE_ENV === 'production' 
+  ? multer.memoryStorage() 
+  : multer.diskStorage({
+      destination: function (req, file, cb) {
+        try {
+          // Verify directory exists before each upload
+          if (!fs.existsSync(uploadDir)) {
+            createUploadDirectory();
+          }
+          cb(null, uploadDir);
+        } catch (error) {
+          console.error('Storage destination error:', error);
+          cb(error, null);
+        }
+      },
+      filename: function (req, file, cb) {
+        try {
+          // Sanitize original filename
+          const originalName = file.originalname.replace(/[^a-zA-Z0-9.-]/g, '_');
+          
+          // Create unique filename with timestamp
+          const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+          const extension = path.extname(originalName);
+          const baseName = path.basename(originalName, extension);
+          
+          const filename = `${file.fieldname}-${baseName}-${uniqueSuffix}${extension}`;
+          
+          console.log(`Generated filename: ${filename}`);
+          cb(null, filename);
+        } catch (error) {
+          console.error('Filename generation error:', error);
+          cb(error, null);
+        }
       }
-      cb(null, uploadDir);
-    } catch (error) {
-      console.error('Storage destination error:', error);
-      cb(error, null);
-    }
-  },
-  filename: function (req, file, cb) {
-    try {
-      // Sanitize original filename
-      const originalName = file.originalname.replace(/[^a-zA-Z0-9.-]/g, '_');
-      
-      // Create unique filename with timestamp
-      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-      const extension = path.extname(originalName);
-      const baseName = path.basename(originalName, extension);
-      
-      const filename = `${file.fieldname}-${baseName}-${uniqueSuffix}${extension}`;
-      
-      console.log(`Generated filename: ${filename}`);
-      cb(null, filename);
-    } catch (error) {
-      console.error('Filename generation error:', error);
-      cb(error, null);
-    }
-  }
-});
+    });
 
 // Enhanced file filter with detailed validation
 const fileFilter = (req, file, cb) => {
