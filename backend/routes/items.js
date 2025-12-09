@@ -208,12 +208,28 @@ router.post('/', [
 
     // Handle image storage based on environment
     let imageData;
-    if (process.env.NODE_ENV === 'production' && req.uploadedFile.buffer) {
-      // Store as base64 in production (serverless)
-      imageData = `data:${req.uploadedFile.mimetype};base64,${req.uploadedFile.buffer.toString('base64')}`;
-    } else {
-      // Store filename in development
-      imageData = req.uploadedFile.filename;
+    try {
+      if (process.env.NODE_ENV === 'production' && req.uploadedFile && req.uploadedFile.buffer) {
+        // Store as base64 in production (serverless)
+        console.log('Storing image as base64, size:', req.uploadedFile.buffer.length);
+        imageData = `data:${req.uploadedFile.mimetype};base64,${req.uploadedFile.buffer.toString('base64')}`;
+      } else if (req.uploadedFile && req.uploadedFile.filename) {
+        // Store filename in development
+        console.log('Storing image as filename:', req.uploadedFile.filename);
+        imageData = req.uploadedFile.filename;
+      } else {
+        console.error('No valid image data found in request');
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid image data'
+        });
+      }
+    } catch (error) {
+      console.error('Error processing image:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Error processing image: ' + error.message
+      });
     }
 
     // Create item
@@ -247,13 +263,15 @@ router.post('/', [
     });
   } catch (error) {
     console.error('Create item error:', error);
+    console.error('Error stack:', error.stack);
     // Delete uploaded file if there's an error
-    if (req.uploadedFile) {
+    if (req.uploadedFile && req.uploadedFile.filename && !req.uploadedFile.buffer) {
       deleteUploadedFile(req.uploadedFile.filename);
     }
     res.status(500).json({
       success: false,
-      message: 'Server error while creating item'
+      message: 'Server error while creating item',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 });
