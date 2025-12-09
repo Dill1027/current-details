@@ -209,16 +209,29 @@ router.post('/', [
     // Handle image storage based on environment
     let imageData;
     try {
-      if (process.env.NODE_ENV === 'production' && req.uploadedFile && req.uploadedFile.buffer) {
+      // Check both req.file and req.uploadedFile for buffer
+      const buffer = (req.file && req.file.buffer) || (req.uploadedFile && req.uploadedFile.buffer);
+      const mimetype = (req.file && req.file.mimetype) || (req.uploadedFile && req.uploadedFile.mimetype);
+      
+      console.log('Upload debug:', {
+        hasFile: !!req.file,
+        hasUploadedFile: !!req.uploadedFile,
+        hasBuffer: !!buffer,
+        nodeEnv: process.env.NODE_ENV
+      });
+      
+      if (process.env.NODE_ENV === 'production' && buffer) {
         // Store as base64 in production (serverless)
-        console.log('Storing image as base64, size:', req.uploadedFile.buffer.length);
-        imageData = `data:${req.uploadedFile.mimetype};base64,${req.uploadedFile.buffer.toString('base64')}`;
+        console.log('Storing image as base64, size:', buffer.length);
+        imageData = `data:${mimetype};base64,${buffer.toString('base64')}`;
       } else if (req.uploadedFile && req.uploadedFile.filename) {
         // Store filename in development
         console.log('Storing image as filename:', req.uploadedFile.filename);
         imageData = req.uploadedFile.filename;
       } else {
         console.error('No valid image data found in request');
+        console.error('req.file:', req.file);
+        console.error('req.uploadedFile:', req.uploadedFile);
         return res.status(400).json({
           success: false,
           message: 'Invalid image data'
@@ -362,16 +375,30 @@ router.put('/:id', [
     }
 
     // Handle image update
-    if (req.uploadedFile) {
+    if (req.uploadedFile || req.file) {
+      // Check for buffer in both req.file and req.uploadedFile
+      const buffer = (req.file && req.file.buffer) || (req.uploadedFile && req.uploadedFile.buffer);
+      const mimetype = (req.file && req.file.mimetype) || (req.uploadedFile && req.uploadedFile.mimetype);
+      const filename = req.uploadedFile && req.uploadedFile.filename;
+      
+      console.log('Update image debug:', {
+        hasFile: !!req.file,
+        hasUploadedFile: !!req.uploadedFile,
+        hasBuffer: !!buffer,
+        nodeEnv: process.env.NODE_ENV
+      });
+
       // Handle base64 in production
-      if (process.env.NODE_ENV === 'production' && req.uploadedFile.buffer) {
-        updateData.image = `data:${req.uploadedFile.mimetype};base64,${req.uploadedFile.buffer.toString('base64')}`;
-      } else {
+      if (process.env.NODE_ENV === 'production' && buffer) {
+        updateData.image = `data:${mimetype};base64,${buffer.toString('base64')}`;
+        console.log('Storing image as base64 (length):', updateData.image.length);
+      } else if (filename) {
         // Delete old image file in development
         if (item.image && !item.image.startsWith('data:')) {
           deleteUploadedFile(item.image);
         }
-        updateData.image = req.uploadedFile.filename;
+        updateData.image = filename;
+        console.log('Storing image as filename:', filename);
       }
     }
 
