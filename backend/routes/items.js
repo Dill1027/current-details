@@ -208,9 +208,9 @@ router.post('/', [
 
     // Handle image storage based on environment
     let imageData;
-    if (process.env.NODE_ENV === 'production' && req.file && req.file.buffer) {
+    if (process.env.NODE_ENV === 'production' && req.uploadedFile.buffer) {
       // Store as base64 in production (serverless)
-      imageData = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
+      imageData = `data:${req.uploadedFile.mimetype};base64,${req.uploadedFile.buffer.toString('base64')}`;
     } else {
       // Store filename in development
       imageData = req.uploadedFile.filename;
@@ -344,11 +344,11 @@ router.put('/:id', [
     }
 
     // Handle image update
-    if (req.uploadedFile || (req.file && req.file.buffer)) {
+    if (req.uploadedFile) {
       // Handle base64 in production
-      if (process.env.NODE_ENV === 'production' && req.file && req.file.buffer) {
-        updateData.image = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
-      } else if (req.uploadedFile) {
+      if (process.env.NODE_ENV === 'production' && req.uploadedFile.buffer) {
+        updateData.image = `data:${req.uploadedFile.mimetype};base64,${req.uploadedFile.buffer.toString('base64')}`;
+      } else {
         // Delete old image file in development
         if (item.image && !item.image.startsWith('data:')) {
           deleteUploadedFile(item.image);
