@@ -208,11 +208,12 @@ const processImageUpload = (req, res, next) => {
 
     // Add file info to request for easy access
     req.uploadedFile = {
-      filename: req.file.filename,
+      filename: req.file.filename || req.file.originalname,
       originalname: req.file.originalname,
       mimetype: req.file.mimetype,
       size: req.file.size,
-      path: req.file.path
+      path: req.file.path || null,
+      buffer: req.file.buffer || null
     };
 
     next();
