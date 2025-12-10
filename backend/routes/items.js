@@ -72,7 +72,11 @@ router.get('/', [
     // Add image URLs to items
     const itemsWithUrls = items.map(item => {
       const itemObj = item.toObject();
-      itemObj.imageUrl = getFileUrl(req, item.image);
+      if (process.env.NODE_ENV === 'production' && item.image.startsWith('data:')) {
+        itemObj.imageUrl = item.image;
+      } else {
+        itemObj.imageUrl = getFileUrl(req, item.image);
+      }
       console.log('📸 GET /items - Item ID:', item._id, 'Image:', item.image, 'URL:', itemObj.imageUrl);
       return itemObj;
     });
