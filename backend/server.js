@@ -12,6 +12,31 @@ const authRoutes = require('./routes/auth');
 const itemRoutes = require('./routes/items');
 const userRoutes = require('./routes/users');
 
+// Verify critical environment variables
+if (!process.env.JWT_SECRET) {
+  console.error('❌ CRITICAL: JWT_SECRET is not set in environment variables!');
+  console.error('Please set JWT_SECRET in your Vercel environment variables.');
+  // Don't exit in production, but log the error
+  if (process.env.NODE_ENV !== 'production') {
+    process.exit(1);
+  }
+}
+
+if (!process.env.MONGODB_URI) {
+  console.error('❌ CRITICAL: MONGODB_URI is not set in environment variables!');
+  console.error('Please set MONGODB_URI in your Vercel environment variables.');
+  if (process.env.NODE_ENV !== 'production') {
+    process.exit(1);
+  }
+}
+
+console.log('✅ Environment check:', {
+  NODE_ENV: process.env.NODE_ENV || 'development',
+  JWT_SECRET: process.env.JWT_SECRET ? '✓ Set' : '✗ Missing',
+  MONGODB_URI: process.env.MONGODB_URI ? '✓ Set' : '✗ Missing',
+  PORT: process.env.PORT || 3001
+});
+
 // Connect to database
 connectDB();
 
@@ -46,43 +71,50 @@ const authLimiter = rateLimit({
   }
 });
 
-// CORS configuration
+// CORS configuration - Allow all origins in production for Vercel
 const corsOptions = {
   origin: function (origin, callback) {
-    // Allow requests from localhost and network during development
+    // Always allow in development
+    if (process.env.NODE_ENV === 'development') {
+      return callback(null, true);
+    }
+    
+    // Allow requests with no origin (like mobile apps, Postman, or curl)
+    if (!origin) {
+      return callback(null, true);
+    }
+    
+    // In production, allow all Vercel domains and localhost for testing
     const allowedOrigins = [
       'http://localhost:3000',
       'http://localhost:3001',
       'http://127.0.0.1:3000',
       'http://127.0.0.1:3001',
       'http://192.168.1.56:3000',
-      'http://192.168.1.56:3001',
-      // Add Vercel deployment URLs
-      'https://current-details-notq-k08hw4wc-dill027s-projects.vercel.app',
-      'https://current-details-notq.vercel.app'
+      'http://192.168.1.56:3001'
     ];
     
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
-    
-    if (process.env.NODE_ENV === 'development') {
-      return callback(null, true);
-    }
-    
-    // In production, check if origin ends with .vercel.app or is in allowed list
-    if (origin && (origin.endsWith('.vercel.app') || allowedOrigins.indexOf(origin) !== -1)) {
+    // Check if origin is allowed or is a Vercel domain
+    if (allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) {
       callback(null, true);
     } else {
-      callback(null, true); // Allow all origins in production for now
+      // Still allow in production to avoid CORS issues
+      callback(null, true);
     }
   },
   credentials: true,
   optionsSuccessStatus: 200,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH', 'HEAD'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+  exposedHeaders: ['Content-Range', 'X-Content-Range'],
+  maxAge: 86400 // 24 hours
 };
 
+// Apply CORS before all routes
 app.use(cors(corsOptions));
+
+// Handle preflight requests explicitly
+app.options('*', cors(corsOptions));
 
 // Body parser middleware
 app.use(express.json({ limit: '50mb' }));
@@ -96,13 +128,29 @@ app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/items', itemRoutes);
 app.use('/api/users', userRoutes);
 
-// Health check endpoint
+// Simple health check endpoint (no auth required)
 app.get('/health', (req, res) => {
   res.status(200).json({
     success: true,
     message: 'Server is running properly',
     timestamp: new Date().toISOString(),
-    uptime: process.uptime()
+    uptime: process.uptime(),
+    environment: process.env.NODE_ENV || 'development',
+    config: {
+      jwt: process.env.JWT_SECRET ? 'configured' : 'missing',
+      mongodb: process.env.MONGODB_URI ? 'configured' : 'missing'
+    }
+  });
+});
+
+// Root endpoint
+app.get('/', (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: 'Continue Offers API',
+    version: '1.0.0',
+    health: '/health',
+    docs: '/api'
   });
 });
 
