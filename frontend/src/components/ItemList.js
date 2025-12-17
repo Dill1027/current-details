@@ -22,7 +22,9 @@ const ItemList = () => {
   const fetchItems = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await apiService.getItems({ page, search, limit: 10 });
+      const params = { page, search, limit: 10, showExpired: 'false' };
+      console.log('ItemList - Fetching with params:', params);
+      const response = await apiService.getItems(params);
       console.log('ItemList - Items received:', response.data.items);
       setItems(response.data.items);
       setPagination(response.data.pagination);
@@ -102,24 +104,42 @@ const ItemList = () => {
             <h1 className="page-title" style={{ fontSize: 'clamp(1.5em, 5vw, 2em)', marginBottom: '8px' }}>📋 Items</h1>
             <p className="page-subtitle" style={{ color: '#6b7280', fontSize: 'clamp(0.9em, 2.5vw, 1em)' }}>Manage your items</p>
           </div>
-          {canCreate && (
-            <Link to="/items/create" className="btn btn-primary" style={{
-              background: 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)',
+          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+            <Link to="/items/expired" className="btn" style={{
+              background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
               border: 'none',
               padding: '12px 24px',
               borderRadius: '10px',
               fontWeight: '600',
               textDecoration: 'none',
               color: 'white',
-              boxShadow: '0 4px 12px rgba(17, 153, 142, 0.3)',
+              boxShadow: '0 4px 12px rgba(239, 68, 68, 0.3)',
               transition: 'transform 0.2s'
             }}
             onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
             onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
             >
-              ➕ Create New Item
+              🚫 Currently No Offer
             </Link>
-          )}
+            {canCreate && (
+              <Link to="/items/create" className="btn btn-primary" style={{
+                background: 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)',
+                border: 'none',
+                padding: '12px 24px',
+                borderRadius: '10px',
+                fontWeight: '600',
+                textDecoration: 'none',
+                color: 'white',
+                boxShadow: '0 4px 12px rgba(17, 153, 142, 0.3)',
+                transition: 'transform 0.2s'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+              onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+              >
+                ➕ Create New Item
+              </Link>
+            )}
+          </div>
         </div>
       </div>
 

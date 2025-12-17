@@ -110,6 +110,12 @@ itemSchema.virtual('durationDays').get(function() {
   return diffDays;
 });
 
+// Virtual to check if the item is expired
+itemSchema.virtual('isExpired').get(function() {
+  const now = new Date();
+  return this.dateRange.end < now;
+});
+
 // Ensure virtual fields are serialized
 itemSchema.set('toJSON', { virtuals: true });
 itemSchema.set('toObject', { virtuals: true });

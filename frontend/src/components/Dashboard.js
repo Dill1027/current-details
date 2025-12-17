@@ -24,8 +24,10 @@ const Dashboard = () => {
   const fetchItems = async () => {
     try {
       setLoading(true);
-      const response = await apiService.getItems({ page: 1, limit: 10 });
-      console.log('Items received:', response.data.items);
+      const params = { page: 1, limit: 10, showExpired: 'false' };
+      console.log('Dashboard - Fetching with params:', params);
+      const response = await apiService.getItems(params);
+      console.log('Dashboard - Items received:', response.data.items);
       setItems(response.data.items);
       setPagination(response.data.pagination);
     } catch (error) {
@@ -122,6 +124,60 @@ const Dashboard = () => {
             gap: '15px',
             paddingTop: '20px'
           }}>
+            <Link to="/items" style={{ 
+              textDecoration: 'none',
+              padding: '20px',
+              borderRadius: '12px',
+              background: 'rgba(255, 255, 255, 0.95)',
+              color: '#667eea',
+              transition: 'all 0.3s',
+              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-4px)';
+              e.currentTarget.style.boxShadow = '0 8px 20px rgba(0, 0, 0, 0.2)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
+            }}>
+              <div style={{ fontSize: '2em' }}>✅</div>
+              <div>
+                <h4 style={{ margin: 0, fontSize: '1.1em', fontWeight: '700' }}>Active Items</h4>
+                <p style={{ margin: 0, fontSize: '0.85em', opacity: 0.7 }}>View active offers</p>
+              </div>
+            </Link>
+
+            <Link to="/items/expired" style={{ 
+              textDecoration: 'none',
+              padding: '20px',
+              borderRadius: '12px',
+              background: 'rgba(255, 255, 255, 0.95)',
+              color: '#ef4444',
+              transition: 'all 0.3s',
+              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-4px)';
+              e.currentTarget.style.boxShadow = '0 8px 20px rgba(0, 0, 0, 0.2)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
+            }}>
+              <div style={{ fontSize: '2em' }}>🚫</div>
+              <div>
+                <h4 style={{ margin: 0, fontSize: '1.1em', fontWeight: '700' }}>No Offer</h4>
+                <p style={{ margin: 0, fontSize: '0.85em', opacity: 0.7 }}>View expired items</p>
+              </div>
+            </Link>
+
             {canCreate && (
               <Link to="/items/create" style={{ 
                 textDecoration: 'none',

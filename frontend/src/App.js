@@ -7,6 +7,7 @@ import Register from './components/Register';
 import Dashboard from './components/Dashboard';
 import ItemList from './components/ItemList';
 import ItemForm from './components/ItemForm';
+import ExpiredItems from './components/ExpiredItems';
 import UserManagement from './components/UserManagement';
 import Header from './components/Layout/Header';
 import Footer from './components/Layout/Footer';
@@ -79,6 +80,14 @@ function AppContent() {
         element={
           <ProtectedRoute>
             <ItemList />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/items/expired"
+        element={
+          <ProtectedRoute>
+            <ExpiredItems />
           </ProtectedRoute>
         }
       />

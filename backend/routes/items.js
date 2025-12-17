@@ -38,7 +38,11 @@ router.get('/', [
     .optional()
     .trim()
     .isLength({ max: 100 })
-    .withMessage('Search term cannot be more than 100 characters')
+    .withMessage('Search term cannot be more than 100 characters'),
+  query('showExpired')
+    .optional()
+    .isString()
+    .withMessage('showExpired must be a string')
 ], async (req, res) => {
   try {
     // Check for validation errors
@@ -54,9 +58,21 @@ router.get('/', [
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const search = req.query.search || '';
+    const showExpired = req.query.showExpired === 'true';
 
     // Build filter
     let filter = { isActive: true };
+    
+    // Filter by expired status
+    const now = new Date();
+    if (showExpired) {
+      // Show only expired items (end date < now)
+      filter['dateRange.end'] = { $lt: now };
+    } else if (req.query.showExpired !== undefined) {
+      // Show only active items (end date >= now)
+      filter['dateRange.end'] = { $gte: now };
+    }
+    // If showExpired is not provided at all, show all items (backward compatibility)
     
     if (search) {
       filter.$or = [
